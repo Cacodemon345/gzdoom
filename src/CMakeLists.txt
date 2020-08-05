@@ -46,6 +46,9 @@ if( APPLE )
     option( OSX_COCOA_BACKEND "Use native Cocoa backend instead of SDL" ON )
 endif()
 
+# If GNUstep is available, use it.
+option (GNUSTEP_LIB "Use GNUstep GUI library" OFF)
+
 if( ${ZDOOM_TARGET_ARCH} MATCHES "x86_64" )
 	set( X64 64 )
 endif()
@@ -134,7 +137,19 @@ else()
 	else()
 		option( NO_GTK "Disable GTK+ dialogs (Not applicable to Windows)" )
 		option( DYN_GTK "Load GTK+ at runtime instead of compile time" ON )
+		include(CheckIncludeFiles)
+		if (GNUSTEP_LIB AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+			find_library(GNUSTEP_FOUND gnustep-gui gnustep-base)
+			if ( NOT GNUSTEP_FOUND )
+				message( SEND_ERROR "GNUstep not found")
+			else()
+				link_libraries(gnustep-gui gnustep-base objc)
 
+				#execute_process(COMMAND "gnustep-config --objc-flags" OUTPUT_VARIABLE GNUSTEP_CONFIG OUTPUT_STRIP_TRAILING_WHITESPACE ON)
+				#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GNUSTEP_CONFIG} -MMD -MP -DGNUSTEP -DGNUSTEP_BASE_LIBRARY=1 -DGNU_GUI_LIBRARY=1 -DGNU_RUNTIME=1 -DGNUSTEP_BASE_LIBRARY=1 -fno-strict-aliasing -fexceptions -fobjc-exceptions -D_NATIVE_OBJC_EXCEPTIONS -pthread -fPIC -Wall -DGSWARN -DGSDIAGNOSE -Wno-import -g -O2 -fgnu-runtime -fconstant-string-class=NSConstantString -I. -I/home/caco345/GNUstep/Library/Headers -I/usr/local/include/GNUstep -I/usr/include/GNUstep")
+				#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${GNUSTEP_CONFIG} -MMD -MP -DGNUSTEP -DGNUSTEP_BASE_LIBRARY=1 -DGNU_GUI_LIBRARY=1 -DGNU_RUNTIME=1 -DGNUSTEP_BASE_LIBRARY=1 -fno-strict-aliasing -fexceptions -fobjc-exceptions -D_NATIVE_OBJC_EXCEPTIONS -pthread -fPIC -Wall -DGSWARN -DGSDIAGNOSE -Wno-import -g -O2 -fgnu-runtime -fconstant-string-class=NSConstantString -I. -I/home/caco345/GNUstep/Library/Headers -I/usr/local/include/GNUstep -I/usr/include/GNUstep")
+			endif()
+		endif()
 		# Use GTK+ for the IWAD picker, if available.
 		if( NOT NO_GTK )
 			pkg_check_modules( GTK3 gtk+-3.0 )
@@ -484,6 +499,27 @@ set( PLAT_SDL_SOURCES
 	common/platform/posix/sdl/i_system.cpp
 	common/platform/posix/sdl/sdlglvideo.cpp
 	common/platform/posix/sdl/st_start.cpp )
+set( PLAT_GNUSTEP_SOURCES
+	common/platform/posix/gnustep/i_input.mm
+	common/platform/posix/gnustep/i_joystick.cpp
+	common/platform/posix/gnustep/i_main.mm
+	common/platform/posix/gnustep/i_system.mm
+	common/platform/posix/gnustep/i_video.mm
+	common/platform/posix/gnustep/st_console.mm
+	common/platform/posix/gnustep/st_start.mm
+	common/platform/posix/gnustep/iwadpicker_gnustep.mm )
+set( PLAT_GNUSTEPSDL_SOURCES
+	common/platform/posix/gnustepwithsdl/crashcatcher.c
+	common/platform/posix/gnustepwithsdl/hardware.cpp
+	common/platform/posix/gnustepwithsdl/i_gui.cpp
+	common/platform/posix/gnustepwithsdl/i_input.cpp
+	common/platform/posix/gnustepwithsdl/i_joystick.cpp
+	common/platform/posix/gnustepwithsdl/i_main.mm
+	common/platform/posix/gnustepwithsdl/i_system.mm
+	common/platform/posix/gnustepwithsdl/sdlglvideo.cpp
+	common/platform/posix/gnustepwithsdl/st_console.mm
+	common/platform/posix/gnustepwithsdl/st_start.mm
+	common/platform/posix/gnustepwithsdl/iwadpicker_gnustep.mm )
 set( PLAT_UNIX_SOURCES
 	common/platform/posix/unix/i_specialpaths.cpp
 	common/platform/posix/unix/gtk_dialogs.cpp )
@@ -522,6 +558,11 @@ elseif( APPLE )
 
 	set_source_files_properties( posix/osx/zdoom.icns PROPERTIES MACOSX_PACKAGE_LOCATION Resources )
 	set_source_files_properties( common/platform/posix/osx/iwadpicker_cocoa.mm PROPERTIES COMPILE_FLAGS -fobjc-exceptions )
+elseif(GNUSTEP_LIB)
+	set( SYSTEM_SOURCES_DIR common/platform/posix common/platform/posix/gnustepwithsdl)
+	set_source_files_properties( ${PLAT_GNUSTEPSDL_SOURCES} PROPERTIES COMPILE_FLAGS "-DGNUSTEP -DGNUSTEP_BASE_LIBRARY=1 -DGNU_GUI_LIBRARY=1 -DGNU_RUNTIME=1 -DGNUSTEP_BASE_LIBRARY=1 -fobjc-exceptions -D_NATIVE_OBJC_EXCEPTIONS -pthread -Wno-import -g -O2 -fgnu-runtime -DGSWARN -fconstant-string-class=NSConstantString -I. -I/usr/include/GNUstep  -I~/GNUstep/Library/Headers -I/usr/local/include/GNUstep")
+	set( SYSTEM_SOURCES ${PLAT_POSIX_SOURCES} ${PLAT_GNUSTEPSDL_SOURCES} ${PLAT_UNIX_SOURCES})
+	set( OTHER_SYSTEM_SOURCES ${PLAT_WIN32_SOURCES} ${PLAT_OSX_SOURCES} ${PLAT_COCOA_SOURCES} )
 else()
 	set( SYSTEM_SOURCES_DIR common/platform/posix common/platform/posix/sdl )
 	set( SYSTEM_SOURCES ${PLAT_POSIX_SOURCES} ${PLAT_SDL_SOURCES} ${PLAT_UNIX_SOURCES} )
@@ -617,6 +658,7 @@ file( GLOB HEADER_FILES
 	common/filesystem/*.h
 	common/platform/posix/cocoa/*.h
 	common/platform/posix/sdl/*.h
+	common/platform/posix/gnustep/*.h
 	common/platform/win32/*.h
 	common/models/*.h
 	common/textures/*.h

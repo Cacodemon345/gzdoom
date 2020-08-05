@@ -11,7 +11,7 @@ void Mac_I_FatalError(const char* errortext)
 	if ( NULL != errorString )
 	{
 		CFOptionFlags dummy;
-	
+		
 		CFUserNotificationDisplayAlert( 0, kCFUserNotificationStopAlertLevel, NULL, NULL, NULL, 
 			CFSTR( "Fatal Error" ), errorString, CFSTR( "Exit" ), NULL, NULL, &dummy );
 		CFRelease( errorString );
