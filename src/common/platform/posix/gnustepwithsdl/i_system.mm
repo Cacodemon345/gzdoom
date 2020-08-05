@@ -31,10 +31,24 @@
  **
  */
 
+#include "AppKit/NSTextField.h"
+#include "AppKit/NSWindow.h"
+#include "Foundation/NSGeometry.h"
 #include "i_common.h"
+#include "s_music.h"
+#include <SDL.h>
 
+#include <fcntl.h>
 #include <fnmatch.h>
+#include <unistd.h>
+#ifndef __linux__
 #include <sys/sysctl.h>
+#else
+int sysctlbyname(const char *name, void *oldp,	size_t *oldlenp, const void *newp, size_t newlen)
+{
+	return -1;
+}
+#endif
 
 #include "i_system.h"
 #include "st_console.h"
@@ -112,13 +126,22 @@ void I_PrintStr(const char* const message)
 }
 
 
-void Mac_I_FatalError(const char* const message);
+void GNUstep_I_FatalError(const char* const message)
+{
+	I_SetMainWindowVisible(false);
+	S_StopMusic(true);
 
+	FConsoleWindow::GetInstance().ShowFatalError(message);
+}
 void I_ShowFatalError(const char *message)
 {
-	Mac_I_FatalError(message);
+	GNUstep_I_FatalError(message);
 }
 
+void I_ShowConsoleWindow(bool visible)
+{
+	FConsoleWindow::GetInstance().Show(visible);
+}
 
 int I_PickIWad(WadStuff* const wads, const int numwads, const bool showwin, const int defaultiwad)
 {
@@ -137,35 +160,41 @@ int I_PickIWad(WadStuff* const wads, const int numwads, const bool showwin, cons
 	return result;
 }
 
-
-void I_PutInClipboard(const char* const string)
+void I_PutInClipboard (const char *str)
 {
-	NSPasteboard* const pasteBoard = [NSPasteboard generalPasteboard];
-	NSString* const stringType = NSStringPboardType;
-	NSArray* const types = [NSArray arrayWithObjects:stringType, nil];
-	NSString* const content = [NSString stringWithUTF8String:string];
-
-	[pasteBoard declareTypes:types
-					   owner:nil];
-	[pasteBoard setString:content
-				  forType:stringType];
+	SDL_SetClipboardText(str);
 }
 
-FString I_GetFromClipboard(bool returnNothing)
+FString I_GetFromClipboard (bool use_primary_selection)
 {
-	if (returnNothing)
+	if(char *ret = SDL_GetClipboardText())
 	{
-		return FString();
+		FString text(ret);
+		SDL_free(ret);
+		return text;
 	}
-
-	NSPasteboard* const pasteBoard = [NSPasteboard generalPasteboard];
-	NSString* const value = [pasteBoard stringForType:NSStringPboardType];
-
-	return FString([value UTF8String]);
+	return "";
 }
 
 
+// Return a random seed, preferably one with lots of entropy.
 unsigned int I_MakeRNGSeed()
 {
-	return static_cast<unsigned int>(arc4random());
+	unsigned int seed;
+	int file;
+
+	// Try reading from /dev/urandom first, then /dev/random, then
+	// if all else fails, use a crappy seed from time().
+	seed = time(NULL);
+	file = open("/dev/urandom", O_RDONLY);
+	if (file < 0)
+	{
+		file = open("/dev/random", O_RDONLY);
+	}
+	if (file >= 0)
+	{
+		read(file, &seed, sizeof(seed));
+		close(file);
+	}
+	return seed;
 }
