@@ -1182,37 +1182,67 @@ else()
 	# Temporary solution for compilers other than MSVC
 	set_source_files_properties( ${PCH_SOURCES} PROPERTIES COMPILE_FLAGS "-include g_pch.h" )
 endif()
-
-add_executable( zdoom WIN32 MACOSX_BUNDLE
-	${HEADER_FILES}
-	${NOT_COMPILED_SOURCE_FILES}
-	${SYSTEM_SOURCES}
-	${FASTMATH_SOURCES}
-	${PCH_SOURCES}
-	common/utility/x86.cpp
-	common/thirdparty/strnatcmp.c
-	common/utility/zstring.cpp
-	common/utility/findfile.cpp
-	common/thirdparty/math/asin.c
-	common/thirdparty/math/atan.c
-	common/thirdparty/math/const.c
-	common/thirdparty/math/cosh.c
-	common/thirdparty/math/exp.c
-	common/thirdparty/math/isnan.c
-	common/thirdparty/math/log.c
-	common/thirdparty/math/log10.c
-	common/thirdparty/math/mtherr.c
-	common/thirdparty/math/polevl.c
-	common/thirdparty/math/pow.c
-	common/thirdparty/math/powi.c
-	common/thirdparty/math/sin.c
-	common/thirdparty/math/sinh.c
-	common/thirdparty/math/sqrt.c
-	common/thirdparty/math/tan.c
-	common/thirdparty/math/tanh.c
-	common/thirdparty/math/fastsin.cpp
-)
-
+if (ANDROID)
+	add_library( zdoom SHARED
+		${HEADER_FILES}
+		${NOT_COMPILED_SOURCE_FILES}
+		${SYSTEM_SOURCES}
+		${FASTMATH_SOURCES}
+		${PCH_SOURCES}
+		common/utility/x86.cpp
+		common/thirdparty/strnatcmp.c
+		common/utility/zstring.cpp
+		common/utility/findfile.cpp
+		common/thirdparty/math/asin.c
+		common/thirdparty/math/atan.c
+		common/thirdparty/math/const.c
+		common/thirdparty/math/cosh.c
+		common/thirdparty/math/exp.c
+		common/thirdparty/math/isnan.c
+		common/thirdparty/math/log.c
+		common/thirdparty/math/log10.c
+		common/thirdparty/math/mtherr.c
+		common/thirdparty/math/polevl.c
+		common/thirdparty/math/pow.c
+		common/thirdparty/math/powi.c
+		common/thirdparty/math/sin.c
+		common/thirdparty/math/sinh.c
+		common/thirdparty/math/sqrt.c
+		common/thirdparty/math/tan.c
+		common/thirdparty/math/tanh.c
+		common/thirdparty/math/fastsin.cpp
+	)
+else()
+	add_executable( zdoom WIN32 MACOSX_BUNDLE
+		${HEADER_FILES}
+		${NOT_COMPILED_SOURCE_FILES}
+		${SYSTEM_SOURCES}
+		${FASTMATH_SOURCES}
+		${PCH_SOURCES}
+		common/utility/x86.cpp
+		common/thirdparty/strnatcmp.c
+		common/utility/zstring.cpp
+		common/utility/findfile.cpp
+		common/thirdparty/math/asin.c
+		common/thirdparty/math/atan.c
+		common/thirdparty/math/const.c
+		common/thirdparty/math/cosh.c
+		common/thirdparty/math/exp.c
+		common/thirdparty/math/isnan.c
+		common/thirdparty/math/log.c
+		common/thirdparty/math/log10.c
+		common/thirdparty/math/mtherr.c
+		common/thirdparty/math/polevl.c
+		common/thirdparty/math/pow.c
+		common/thirdparty/math/powi.c
+		common/thirdparty/math/sin.c
+		common/thirdparty/math/sinh.c
+		common/thirdparty/math/sqrt.c
+		common/thirdparty/math/tan.c
+		common/thirdparty/math/tanh.c
+		common/thirdparty/math/fastsin.cpp
+	)
+endif()
 set_source_files_properties( ${FASTMATH_SOURCES} PROPERTIES COMPILE_FLAGS ${ZD_FASTMATH_FLAG} )
 set_source_files_properties( xlat/parse_xlat.cpp PROPERTIES OBJECT_DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/xlat_parser.c" )
 set_source_files_properties( common/engine/sc_man.cpp PROPERTIES OBJECT_DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/sc_man_scanner.h" )
@@ -1329,8 +1359,15 @@ if( MSVC )
 
 endif()
 
-if( NOT WIN32 AND NOT APPLE )
+if( NOT WIN32 AND NOT APPLE AND NOT ANDROID )
 	FILE( WRITE ${CMAKE_CURRENT_BINARY_DIR}/link-make "if [ ! -e ${ZDOOM_OUTPUT_DIR}/${ZDOOM_EXE_NAME} ]; then ln -sf ${CMAKE_CURRENT_BINARY_DIR}/${ZDOOM_EXE_NAME} ${ZDOOM_OUTPUT_DIR}/${ZDOOM_EXE_NAME}; fi" )
+	add_custom_command( TARGET zdoom POST_BUILD
+		COMMAND chmod +x ${CMAKE_CURRENT_BINARY_DIR}/link-make
+		COMMAND /bin/sh -c ${CMAKE_CURRENT_BINARY_DIR}/link-make )
+endif()
+
+if( ANDROID )
+	FILE( WRITE ${CMAKE_CURRENT_BINARY_DIR}/link-make "if [ ! -e ${ZDOOM_OUTPUT_DIR}/lib${ZDOOM_EXE_NAME}.so ]; then ln -sf ${CMAKE_CURRENT_BINARY_DIR}/lib${ZDOOM_EXE_NAME}.so ${ZDOOM_OUTPUT_DIR}/lib${ZDOOM_EXE_NAME}.so; fi" )
 	add_custom_command( TARGET zdoom POST_BUILD
 		COMMAND chmod +x ${CMAKE_CURRENT_BINARY_DIR}/link-make
 		COMMAND /bin/sh -c ${CMAKE_CURRENT_BINARY_DIR}/link-make )
