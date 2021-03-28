@@ -169,6 +169,12 @@ bool VulkanSwapChain::CreateSwapChain(VkSwapchainKHR oldSwapChain)
 		return false;
 	}
 
+#ifdef __ANDROID__
+	// Clear out the landscape transform bits on Android to avoid the horizontal squash effect.
+	if (surfaceCapabilities.currentTransform & VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR) surfaceCapabilities.currentTransform = (VkSurfaceTransformFlagBitsKHR)(surfaceCapabilities.currentTransform & ~VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR);
+	if (surfaceCapabilities.currentTransform & VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR) surfaceCapabilities.currentTransform = (VkSurfaceTransformFlagBitsKHR)(surfaceCapabilities.currentTransform & ~VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR);
+#endif
+
 	uint32_t imageCount = surfaceCapabilities.minImageCount + 1;
 	if (surfaceCapabilities.maxImageCount > 0 && imageCount > surfaceCapabilities.maxImageCount)
 		imageCount = surfaceCapabilities.maxImageCount;

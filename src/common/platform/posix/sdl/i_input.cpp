@@ -45,6 +45,12 @@
 #include "i_interface.h"
 #include "engineerrors.h"
 #include "i_interface.h"
+#include "v_video.h"
+#include "v_font.h"
+#include "d_event.h"
+#include "gamestate.h"
+#include "v_draw.h"
+#include "menustate.h"
 
 
 static void I_CheckGUICapture ();
@@ -58,6 +64,7 @@ CVAR (Bool,  use_mouse,				true, CVAR_ARCHIVE|CVAR_GLOBALCONFIG)
 
 extern int WaitingForKey, chatmodeon;
 extern constate_e ConsoleState;
+extern int ConBottom, ConWidth;
 
 static const SDL_Keycode DIKToKeySym[256] =
 {
@@ -173,7 +180,13 @@ static void I_CheckGUICapture ()
 		if (wantCapt)
 		{
 			buttonMap.ResetButtonStates();
+			if (ConsoleState != c_down && ConsoleState != c_falling && !chatmodeon) { SDL_StopTextInput(); return; }
+			if (menuactive == MENU_On || menuactive == MENU_OnNoPause) { SDL_StopTextInput; return; }
+			SDL_Rect consoleRect{0, chatmodeon ? twod->GetHeight() : ConBottom - CurrentConsoleFont->GetHeight(),ConWidth,CurrentConsoleFont->GetHeight()};	
+			SDL_SetTextInputRect(&consoleRect);
+			SDL_StartTextInput();
 		}
+		else SDL_StopTextInput();
 	}
 }
 

@@ -21,6 +21,7 @@ else()
 endif()
 
 message("Building for target architecture: ${ZDOOM_TARGET_ARCH}")
+option( TOOLS_ONLY "Only build tools. For crosscompiling." OFF)
 
 if( MSVC AND NOT ZMUSIC_FOUND )
 	# Use prebuilt library
