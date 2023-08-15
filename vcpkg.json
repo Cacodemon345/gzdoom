@@ -30,7 +30,7 @@
         },
         {
             "name": "openal-soft",
-            "platform": "!windows | (windows & static & staticcrt)"
+            "platform": "osx"
         },
         {
             "name": "sdl2",
