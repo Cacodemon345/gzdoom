@@ -20,6 +20,10 @@ if (LIBVPX_VCPKG)
 	list(APPEND VCPKG_MANIFEST_FEATURES "vcpkg-libvpx")
 endif()
 
+if (OPENAL_SOFT_VCPKG)
+	list(APPEND VCPKG_MANIFEST_FEATURES "vcpkg-openal-soft")
+endif()
+
 project(GZDoom)
 
 if (VCPKG_TOOLCHAIN)
@@ -31,8 +35,12 @@ if (VCPKG_TOOLCHAIN)
 	endif()
 endif()
 
-if (WIN32)
+if (WIN32 AND VCPKG_TOOLCHAIN)
 	option(LIBVPX_VCPKG "Use libvpx from vcpkg" OFF)
+endif()
+
+if (VCPKG_TOOLCHAIN)
+	option(OPENAL_SOFT_VCPKG "Use OpenAL from vcpkg" OFF)
 endif()
 
 set(CMAKE_CXX_STANDARD 17)
