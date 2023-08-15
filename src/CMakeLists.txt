@@ -131,9 +131,12 @@ else()
 
 	# Non-Windows version also needs SDL except native OS X backend
 	if( NOT APPLE OR NOT OSX_COCOA_BACKEND )
-		find_package( SDL2 REQUIRED )
-		include_directories( SYSTEM "${SDL2_INCLUDE_DIR}" )
-		set( PROJECT_LIBRARIES ${PROJECT_LIBRARIES} "${SDL2_LIBRARY}" )
+		find_package( SDL2 CONFIG REQUIRED )
+		if (TARGET SDL2::SDL2)
+			list(APPEND PROJECT_LIBRARIES SDL2::SDL2)
+		elseif(TARGET SDL2::SDL2-static)
+			list(APPEND PROJECT_LIBRARIES SDL2::SDL2-static)
+		endif()
 	endif()
 
 endif()
@@ -300,7 +303,7 @@ if( UNIX )
 			add_definitions( -DNO_CLOCK_GETTIME )
 		endif()
 	else()
-		set( PROJECT_LIBRARIES ${PROJECT_LIBRARIES} rt )
+		list( APPEND PROJECT_LIBRARIES rt )
 	endif()
 endif()
 
@@ -315,9 +318,9 @@ add_custom_target( revision_check ALL
 
 # required libraries
 
-set( PROJECT_LIBRARIES ${PROJECT_LIBRARIES} "${ZLIB_LIBRARIES}" "${JPEG_LIBRARIES}" "${BZIP2_LIBRARIES}" "${CMAKE_DL_LIBS}" "${DRPC_LIBRARIES}")
+set( PROJECT_LIBRARIES ${PROJECT_LIBRARIES} ZLIB::ZLIB JPEG::JPEG BZip2::BZip2 "${CMAKE_DL_LIBS}" "${DRPC_LIBRARIES}")
 if (HAVE_VULKAN)
-	set( PROJECT_LIBRARIES ${PROJECT_LIBRARIES} "zvulkan")
+	list( APPEND PROJECT_LIBRARIES "zvulkan" )
 endif()
 
 # ZMUSIC
@@ -1359,6 +1362,10 @@ add_custom_command(TARGET zdoom POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -E copy_if_different
 	${CMAKE_SOURCE_DIR}/fm_banks/gs-by-papiezak-and-sneakernets.wopn $<TARGET_FILE_DIR:zdoom>/fm_banks/gs-by-papiezak-and-sneakernets.wopn
 )
+
+if (VCPKG_TOOLCHAIN)
+	x_vcpkg_install_local_dependencies(TARGETS zdoom DESTINATION ".")
+endif()
 
 if( WIN32 )
 	set( INSTALL_SOUNDFONT_PATH . CACHE STRING "Directory where soundfonts and WOPL/WOPN banks will be placed during install." )

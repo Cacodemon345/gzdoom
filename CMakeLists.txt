@@ -16,7 +16,28 @@ if( COMMAND cmake_policy )
 	endif()
 endif()
 
+if (LIBVPX_VCPKG)
+	list(APPEND VCPKG_MANIFEST_FEATURES "vcpkg-libvpx")
+endif()
+
 project(GZDoom)
+
+if (NOT VCPKG_TOOLCHAIN)
+	message(FATAL_ERROR "GZDoom only supports building with vcpkg. Please set CMAKE_TOOLCHAIN_FILE to point to your vcpkg installation's scripts/buildsystems/vcpkg.cmake file.")
+endif()
+
+if (VCPKG_TOOLCHAIN)
+	if (WIN32 AND (VCPKG_TARGET_TRIPLET MATCHES "-static-md$"))
+		message(FATAL_ERROR "Dynamically-linked builds are unsupported with VCPKG_TARGET_TRIPLET=\"${VCPKG_TARGET_TRIPLET}\" on Windows.\n\n Remove your build directory and pass -DVCPKG_TARGET_TRIPLET=${VCPKG_TARGET_TRIPLET} without the '-md' to get past this error.")
+	endif()
+	if (WIN32 AND NOT (VCPKG_TARGET_TRIPLET MATCHES "-static$"))
+		message(FATAL_ERROR "Dynamically-linked builds are unsupported with VCPKG_TARGET_TRIPLET=\"${VCPKG_TARGET_TRIPLET}\" on Windows.\n\n Remove your build directory and pass -DVCPKG_TARGET_TRIPLET=${VCPKG_TARGET_TRIPLET}-static to get past this error.")
+	endif()
+endif()
+
+if (WIN32)
+	option(LIBVPX_VCPKG "Use libvpx from vcpkg" OFF)
+endif()
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
