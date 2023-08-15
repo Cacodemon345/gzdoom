@@ -13,6 +13,17 @@
                     "platform": "windows & static & staticcrt"
                 }
             ]
+        },
+        "vcpkg-openal-soft":
+        {
+            "description": "Use openal-soft provided by vcpkg.",
+            "dependencies": [
+                {
+                    "name": "openal-soft",
+                    "default-features": false,
+                    "platform": "!windows | (windows & static & staticcrt)"
+                }
+            ]
         }
     },
     "dependencies": [
@@ -27,10 +38,6 @@
         {
             "name": "bzip2",
             "platform": "!windows | (windows & static & staticcrt)"
-        },
-        {
-            "name": "openal-soft",
-            "platform": "osx"
         },
         {
             "name": "sdl2",
