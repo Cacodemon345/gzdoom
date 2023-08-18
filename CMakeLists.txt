@@ -24,16 +24,12 @@ if (OPENAL_SOFT_VCPKG)
 	list(APPEND VCPKG_MANIFEST_FEATURES "vcpkg-openal-soft")
 endif()
 
-project(GZDoom)
-
-if (VCPKG_TOOLCHAIN)
-	if (WIN32 AND (VCPKG_TARGET_TRIPLET MATCHES "-static-md$"))
-		message(FATAL_ERROR "Dynamically-linked builds are unsupported with VCPKG_TARGET_TRIPLET=\"${VCPKG_TARGET_TRIPLET}\" on Windows.\n\n Remove CMakeCache.txt in your build directory and pass -DVCPKG_TARGET_TRIPLET=${VCPKG_TARGET_TRIPLET} without the '-md' to get past this error.")
-	endif()
-	if (WIN32 AND NOT (VCPKG_TARGET_TRIPLET MATCHES "-static$"))
-		message(FATAL_ERROR "Dynamically-linked builds are unsupported with VCPKG_TARGET_TRIPLET=\"${VCPKG_TARGET_TRIPLET}\" on Windows.\n\n Remove CMakeCache.txt in your build directory and pass -DVCPKG_TARGET_TRIPLET=${VCPKG_TARGET_TRIPLET}-static to get past this error.")
-	endif()
+if (CMAKE_SYSTEM_NAME STREQUAL "Windows" OR (NOT CMAKE_SYSTEM_NAME AND CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows"))
+	# Force static triplet on Windows
+	set(VCPKG_TARGET_TRIPLET "x64-windows-static")
 endif()
+
+project(GZDoom)
 
 if (WIN32 AND VCPKG_TOOLCHAIN)
 	option(LIBVPX_VCPKG "Use libvpx from vcpkg" OFF)
