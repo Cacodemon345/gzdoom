@@ -139,7 +139,11 @@ else()
 endif()
 
 if( NOT NO_OPENAL )
-	if ( NOT DYN_OPENAL )	# DYN_OPENAL uses local copies of the headers.
+	if ( "vcpkg-openal-soft" IN_LIST VCPKG_MANIFEST_FEATURES )
+		# Statically link to OpenAL from vcpkg
+		find_package( OpenAL CONFIG REQUIRED )
+		list( APPEND PROJECT_LIBRARIES OpenAL::OpenAL )
+	elseif ( NOT DYN_OPENAL )	# DYN_OPENAL uses local copies of the headers.
 		find_package( OpenAL )
 		mark_as_advanced(CLEAR OPENAL_INCLUDE_DIR)
 		if( OPENAL_INCLUDE_DIR )
