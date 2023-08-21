@@ -334,8 +334,8 @@ void FTextureAnimator::ParseAnimatedTexture(FScanner& sc)
 		{
 			MD5Context md5;
 			TArray<uint8_t> cksum(16, true);
-			nonbasepicname.Format("%s", picname.GetChars());
-			md5.Update((uint8_t*)picname.GetChars(), picname.Len());
+			nonbasepicname.Format("%s_%d", picname.GetChars(), i + 1);
+			md5.Update((uint8_t*)nonbasepicname.GetChars(), nonbasepicname.Len());
 			md5.Final(cksum.Data());
 			nonbasepicname.AppendCharacter('_');
 			for (int i = 0; i < 16; i++)
