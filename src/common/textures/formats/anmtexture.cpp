@@ -47,12 +47,14 @@
 
 class FAnmTexture : public FImageSource
 {
+	int FrameRate;
 
 public:
-	FAnmTexture (int lumpnum, int w, int h);
-	void ReadFrame(uint8_t *buffer, uint8_t *palette);
-	PalettedPixels CreatePalettedPixels(int conversion) override;
-	int CopyPixels(FBitmap *bmp, int conversion) override;
+	FAnmTexture (int lumpnum, int w, int h, int framerate = 70, int numofframes = 1);
+	void ReadFrame(uint8_t *buffer, uint8_t *palette, int frame = 0);
+	PalettedPixels CreatePalettedPixels(int conversion, int frame = 0) override;
+	int CopyPixels(FBitmap *bmp, int conversion, int frame = 0) override;
+	int GetDurationOfFrame(int frame = 0) override;
 };
 
 
@@ -80,7 +82,7 @@ FImageSource *AnmImage_TryCreate(FileReader & file, int lumpnum)
 	int numframes = ANIM_NumFrames(&anim);
 	if (numframes >= 1)
 	{
-		return new FAnmTexture(lumpnum, 320, 200);
+		return new FAnmTexture(lumpnum, 320, 200, anim.lpheader->version ? 70 : 18, numframes);
 	}
 
 	return nullptr;
@@ -92,28 +94,40 @@ FImageSource *AnmImage_TryCreate(FileReader & file, int lumpnum)
 //
 //==========================================================================
 
-FAnmTexture::FAnmTexture (int lumpnum, int w, int h)
+FAnmTexture::FAnmTexture (int lumpnum, int w, int h, int framerate, int numofframes)
 	: FImageSource(lumpnum)
 {
 	Width = w;
 	Height = h;
 	LeftOffset = 0;
 	TopOffset = 0;
+
+	FrameRate = framerate;
+	NumOfFrames = numofframes;
 }
 
-void FAnmTexture::ReadFrame(uint8_t *pixels, uint8_t *palette)
+int FAnmTexture::GetDurationOfFrame(int frame)
+{
+	(void)frame;
+	return 1000 / FrameRate;
+}
+
+void FAnmTexture::ReadFrame(uint8_t *pixels, uint8_t *palette, int frame)
 {
 	FileData lump = fileSystem.ReadFile (SourceLump);
-	uint8_t *source = (uint8_t *)lump.GetMem(); 
+	uint8_t *source = (uint8_t *)lump.GetMem();
+
+	if (frame < 1)
+		frame = 1;
 
 	anim_t anim;
 	if (ANIM_LoadAnim(&anim, source, (int)lump.GetSize()) >= 0)
 	{
 		int numframes = ANIM_NumFrames(&anim);
-		if (numframes >= 1)
+		if (numframes >= frame)
 		{
 			memcpy(palette, ANIM_GetPalette(&anim), 768);
-			memcpy(pixels, ANIM_DrawFrame(&anim, 1), Width*Height);
+			memcpy(pixels, ANIM_DrawFrame(&anim, frame), Width*Height);
 			return;
 		}
 	}
@@ -127,7 +141,7 @@ void FAnmTexture::ReadFrame(uint8_t *pixels, uint8_t *palette)
 //
 //==========================================================================
 
-PalettedPixels FAnmTexture::CreatePalettedPixels(int conversion)
+PalettedPixels FAnmTexture::CreatePalettedPixels(int conversion, int frame)
 {
 	PalettedPixels pixels(Width*Height);
 	uint8_t buffer[64000];
@@ -149,11 +163,11 @@ PalettedPixels FAnmTexture::CreatePalettedPixels(int conversion)
 //
 //==========================================================================
 
-int FAnmTexture::CopyPixels(FBitmap *bmp, int conversion)
+int FAnmTexture::CopyPixels(FBitmap *bmp, int conversion, int frame)
 {
 	uint8_t buffer[64000];
 	uint8_t palette[768];
-	ReadFrame(buffer, palette);
+	ReadFrame(buffer, palette, frame);
 
     auto dpix = bmp->GetPixels();
 	for (int i = 0; i < Width * Height; i++)

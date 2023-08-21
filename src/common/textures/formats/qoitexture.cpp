@@ -51,8 +51,8 @@ class FQOITexture : public FImageSource
 {
 public:
 	FQOITexture(int lumpnum, QOIHeader& header);
-	PalettedPixels CreatePalettedPixels(int conversion) override;
-	int CopyPixels(FBitmap *bmp, int conversion) override;
+	PalettedPixels CreatePalettedPixels(int conversion, int frame = 0) override;
+	int CopyPixels(FBitmap *bmp, int conversion, int frame = 0) override;
 };
 
 FImageSource *QOIImage_TryCreate(FileReader &file, int lumpnum)
@@ -88,7 +88,7 @@ FQOITexture::FQOITexture(int lumpnum, QOIHeader& header)
 	if (header.channels == 3) bMasked = bTranslucent = false;
 }
 
-PalettedPixels FQOITexture::CreatePalettedPixels(int conversion)
+PalettedPixels FQOITexture::CreatePalettedPixels(int conversion, int frame)
 {
 	FBitmap bitmap;
 	bitmap.Create(Width, Height);
@@ -123,7 +123,7 @@ PalettedPixels FQOITexture::CreatePalettedPixels(int conversion)
 	return Pixels;
 }
 
-int FQOITexture::CopyPixels(FBitmap *bmp, int conversion)
+int FQOITexture::CopyPixels(FBitmap *bmp, int conversion, int frame)
 {
 	enum
 	{

@@ -44,6 +44,7 @@
 #include "animations.h"
 #include "texturemanager.h"
 #include "image.h"
+#include "md5.h"
 
 // MACROS ------------------------------------------------------------------
 
@@ -289,6 +290,78 @@ void FTextureAnimator::InitAnimated (void)
 	}
 }
 
+void FTextureAnimator::ParseAnimatedTexture(FScanner& sc)
+{
+	const BITFIELD texflags = FTextureManager::TEXMAN_Overridable | FTextureManager::TEXMAN_TryAny | FTextureManager::TEXMAN_ShortNameOnly;
+	TArray<FAnimDef::FAnimFrame> frames (32);
+	FString picname;
+	FString nonbasepicname;
+	FString filesystemPath;
+
+	sc.MustGetString();
+	picname = sc.String;
+	sc.MustGetString();
+	filesystemPath = sc.String;
+
+	FTextureID picnum = TexMan.CheckForTexture (picname, ETextureType::Flat, texflags);
+	auto lumpnum = fileSystem.CheckNumForFullName(filesystemPath);
+
+	if (lumpnum == -1)
+		sc.ScriptError("%s not found", filesystemPath);
+	
+	auto image = FImageSource::GetImage(lumpnum, false);
+	if (!image)
+	{
+		Printf(TEXTCOLOR_ORANGE "Invalid data encountered for animated texture %s\n", fileSystem.GetFileFullPath(lumpnum).GetChars());
+		return;
+	}
+
+	for (int i = 0; i < image->GetNumOfFrames(); i++)
+	{
+		FTexture* texture = CreateImageTexture(image, i + 1);
+		FGameTexture* newtex = nullptr;
+		if (i == 0)
+		{
+			newtex = MakeGameTexture(texture, picname.GetChars(), ETextureType::Wall);
+			if (TexMan.CheckForTexture(picname, ETextureType::Any).Exists())
+			{
+				auto oldtex = TexMan.GameTexture(picnum);
+				newtex->SetUseType(oldtex->GetUseType());
+				TexMan.ReplaceTexture (picnum, newtex, true);
+			}
+		}
+		else
+		{
+			MD5Context md5;
+			TArray<uint8_t> cksum(16, true);
+			nonbasepicname.Format("%s", picname.GetChars());
+			md5.Update((uint8_t*)picname.GetChars(), picname.Len());
+			md5.Final(cksum.Data());
+			nonbasepicname.AppendCharacter('_');
+			for (int i = 0; i < 16; i++)
+			{
+				nonbasepicname.AppendFormat("%02x", cksum[i]);
+			}
+			newtex = MakeGameTexture(texture, nonbasepicname.GetChars(), ETextureType::Wall);
+		}
+		FTextureID textureId = TexMan.AddGameTexture(newtex);
+		if (i == 0)
+		{
+			picnum = textureId;
+		}
+		FAnimDef::FAnimFrame animFrame;
+		animFrame.SpeedMin = image->GetDurationOfFrame(i + 1);
+		animFrame.SpeedRange = 0;
+		animFrame.FramePic = textureId;
+		frames.Push(animFrame);
+	}
+	if (frames.Size() < 2)
+	{
+		I_Error("Texture %s is not animated\n", fileSystem.GetFileFullPath(lumpnum).GetChars());
+	}
+	(void)AddComplexAnim(picnum, frames);
+}
+
 //==========================================================================
 //
 // FTextureAnimator :: InitAnimDefs
@@ -332,6 +405,10 @@ void FTextureAnimator::InitAnimDefs ()
 			else if (sc.Compare ("cameratexture"))
 			{
 				ParseCameraTexture(sc);
+			}
+			else if (sc.Compare ("animtexture"))
+			{
+				ParseAnimatedTexture(sc);
 			}
 			else if (sc.Compare ("animatedDoor"))
 			{
