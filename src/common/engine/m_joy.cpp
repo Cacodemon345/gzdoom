@@ -68,6 +68,9 @@ CUSTOM_CVARD(Bool, use_joystick, false, CVAR_ARCHIVE|CVAR_GLOBALCONFIG|CVAR_NOIN
 #endif
 }
 
+CVAR(Bool, joy_feedback, true, CVAR_ARCHIVE | CVAR_GLOBALCONFIG);
+CVAR(Float, joy_feedback_scale, 1.0f, CVAR_ARCHIVE | CVAR_GLOBALCONFIG);
+
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 // Bits 0 is X+, 1 is X-, 2 is Y+, and 3 is Y-.

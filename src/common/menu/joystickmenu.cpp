@@ -153,6 +153,37 @@ DEFINE_ACTION_FUNCTION(IJoystickConfig, SetEnabledInBackground)
 	return 0;
 }
 
+DEFINE_ACTION_FUNCTION(IJoystickConfig, AddRumble)
+{
+	PARAM_PROLOGUE;
+	PARAM_FLOAT(l);
+	PARAM_FLOAT(r);
+	for (auto joystick : Joysticks)
+	{
+		joystick->AddRumble(l, r);
+	}
+	return 0;
+}
+
+DEFINE_ACTION_FUNCTION(IJoystickConfig, SetRumble)
+{
+	PARAM_PROLOGUE;
+	PARAM_FLOAT(l);
+	PARAM_FLOAT(r);
+	for (auto joystick : Joysticks)
+	{
+		joystick->SetRumble(l, r);
+	}
+	return 0;
+}
+
+void I_SetJoystickRumble(double factor)
+{
+	for (auto joystick : Joysticks)
+	{
+		joystick->SetRumble(factor, factor);
+	}
+}
 
 void UpdateJoystickMenu(IJoystickConfig *selected)
 {

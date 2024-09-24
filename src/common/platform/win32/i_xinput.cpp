@@ -70,7 +70,7 @@ extern bool AppActive;
 // TYPES -------------------------------------------------------------------
 
 typedef DWORD (WINAPI *XInputGetStateType)(DWORD index, XINPUT_STATE *state);
-typedef DWORD (WINAPI *XInputSetStateType)(DWORD index, XINPUT_STATE *state);
+typedef DWORD (WINAPI *XInputSetStateType)(DWORD index, XINPUT_VIBRATION *state);
 typedef DWORD (WINAPI *XInputGetCapabilitiesType)(DWORD index, DWORD flags, XINPUT_CAPABILITIES *caps);
 typedef void  (WINAPI *XInputEnableType)(BOOL enable);
 
@@ -110,6 +110,8 @@ public:
 	bool AllowsEnabledInBackground() { return true; }
 	bool GetEnabledInBackground() { return EnabledInBackground; }
 	void SetEnabledInBackground(bool enabled) { EnabledInBackground = enabled; }
+
+	void SetRumbleInternal(float left, float right) override;
 
 	void SetDefaultConfig();
 	FString GetIdentifier();
@@ -675,6 +677,27 @@ bool FXInputController::IsAxisMapDefault(int axis)
 		return Axes[axis].GameAxis == DefaultAxes[axis].GameAxis;
 	}
 	return true;
+}
+
+void FXInputController::SetRumbleInternal(float left, float right)
+{
+	if (!joy_feedback)
+	{
+		XINPUT_VIBRATION vibration;
+		vibration.wLeftMotorSpeed = vibration.wRightMotorSpeed = 0.0;
+		InputSetState(Index, &vibration);
+		leftRumble = rightRumble = 0.0;
+		return;
+	}
+
+	leftRumble = std::clamp(left, 0.f, 1.f);
+	rightRumble = std::clamp(right, 0.f, 1.f);
+
+	XINPUT_VIBRATION vibration;
+	vibration.wLeftMotorSpeed = (uint16_t)round(UINT16_MAX * std::clamp(leftRumble * joy_feedback_scale, 0.0, 1.0));
+	vibration.wRightMotorSpeed = (uint16_t)round(UINT16_MAX * std::clamp(rightRumble * joy_feedback_scale, 0.0, 1.0));
+	InputSetState(Index, &vibration);
+	return;
 }
 
 //==========================================================================

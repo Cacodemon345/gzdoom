@@ -35,6 +35,7 @@
 
 #include "doomdef.h"
 #include "d_net.h"
+#include "m_joy.h"
 #include "doomstat.h"
 #include "m_random.h"
 #include "m_bbox.h"
@@ -1032,6 +1033,12 @@ void R_SetupFrame(FRenderViewpoint& viewPoint, const FViewWindow& viewWindow, AA
 				iView->ViewOffset.Y += QuakePower(quakeFactor, jiggers.Intensity.Y, jiggers.Offset.Y);
 			if (jiggers.Intensity.Z || jiggers.Offset.Z)
 				iView->ViewOffset.Z += QuakePower(quakeFactor, jiggers.Intensity.Z, jiggers.Offset.Z);
+
+			I_SetJoystickRumble(quakeFactor);
+		}
+		else
+		{
+			I_SetJoystickRumble(0.0);
 		}
 	}
 

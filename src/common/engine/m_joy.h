@@ -4,6 +4,10 @@
 #include "basics.h"
 #include "tarray.h"
 #include "c_cvars.h"
+#include "printf.h"
+#include "i_time.h"
+
+#include <algorithm>
 
 enum EJoyAxis
 {
@@ -20,6 +24,12 @@ enum EJoyAxis
 // Generic configuration interface for a controller.
 struct IJoystickConfig
 {
+protected:
+	double rumblePast = 0;
+	const double rumbleDecay = 0.4;
+	double leftRumble = 0, rightRumble = 0;
+
+public:
 	virtual ~IJoystickConfig() = 0;
 
 	virtual FString GetName() = 0;
@@ -51,9 +61,37 @@ struct IJoystickConfig
 
 	virtual void SetDefaultConfig() = 0;
 	virtual FString GetIdentifier() = 0;
+
+	virtual void SetRumbleInternal(float left, float right)
+	{
+		Printf(TEXTCOLOR_RED "Rumble not implemented");
+	}
+
+	void SetRumble(float left, float right)
+	{
+		SetRumbleInternal(left, right);
+		rumblePast = I_msTimeF() / 1000.;
+	}
+
+	void AddRumble(float left, float right)
+	{
+		SetRumbleInternal(leftRumble + left, rightRumble + right);
+		rumblePast = I_msTimeF() / 1000.;
+	}
+
+	void UpdateRumble()
+	{
+		double tm = I_msTimeF() / 1000.0;
+		double te = std::clamp((float)(tm - (rumblePast + 0.04)), 0.0f, 10.0f);
+		leftRumble = std::clamp(leftRumble - (te * (1.0 / rumbleDecay)), 0.0, 1.0);
+		rightRumble = std::clamp(rightRumble - (te * (1.0 / rumbleDecay)), 0.0, 1.0);
+
+	}
 };
 
 EXTERN_CVAR(Bool, use_joystick);
+EXTERN_CVAR(Bool, joy_feedback);
+EXTERN_CVAR(Float, joy_feedback_scale);
 
 bool M_LoadJoystickConfig(IJoystickConfig *joy);
 void M_SaveJoystickConfig(IJoystickConfig *joy);
@@ -62,6 +100,8 @@ void Joy_GenerateButtonEvents(int oldbuttons, int newbuttons, int numbuttons, in
 void Joy_GenerateButtonEvents(int oldbuttons, int newbuttons, int numbuttons, const int *keys);
 int Joy_XYAxesToButtons(double x, double y);
 double Joy_RemoveDeadZone(double axisval, double deadzone, uint8_t *buttons);
+
+void I_SetJoystickRumble(double factor);
 
 // These ought to be provided by a system-specific i_input.cpp.
 void I_GetAxes(float axes[NUM_JOYAXIS]);
